@@ -11,7 +11,7 @@ const AdminContextProvider = ({ children }) => {
     const [appointments, setAppointments] = useState([])
     const [dashData, setDashData] = useState({})
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const backendUrl = "https://docdash-backend-fate.onrender.com";
     const getAllDoctors = async () => {
         try {
             const {data} = await axios.get(`${backendUrl}/api/admin/all-doctors`, {
