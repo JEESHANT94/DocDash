@@ -9,7 +9,7 @@ export const AppContext = createContext();
 export const AppContextProvider = ({ children }) => {
  
     const currencySymbol = '$'
-    const backendUrl = import.meta.env.VITE_BACKEND_URL
+    const backendUrl = "https://docdash-backend-fate.onrender.com"
     const [topDoctors, setTopDoctors] = useState([])
     const [token, setToken] = useState(localStorage.getItem("token") ? localStorage.getItem("token") : false)
     const [userData, setUserData] = useState(false)
