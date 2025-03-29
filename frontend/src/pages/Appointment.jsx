@@ -1,8 +1,12 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
-import { 
-  Check, Info, Clock, Calendar, Star, 
+import RelatedDoctors from '../components/RelatedDoctors';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+
+import {
+  Check, Info, Clock, Calendar, Star,
   MapPin, Phone, Mail, Shield, Award,
   Heart, ChevronRight, Video
 } from 'lucide-react';
@@ -10,7 +14,8 @@ import {
 function Appointment() {
   // ... [Previous state and helper functions remain the same]
   const { docId } = useParams();
-  const { topDoctors, currencySymbol } = useContext(AppContext);
+  const { topDoctors, currencySymbol, getDoctorsData, token, backendUrl, userData } = useContext(AppContext);
+
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const [docInfo, setDocInfo] = useState(null);
   const [docSlots, setDocSlots] = useState([]);
@@ -18,7 +23,7 @@ function Appointment() {
   const [slotTime, setSlotTime] = useState('');
   const [isHovered, setIsHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-
+  const navigate = useNavigate()
   // ... [Previous fetchDocInfo and getAvailableSlots functions remain the same]
   const fetchDocInfo = async () => {
     const docInfo = topDoctors.find((doctor) => doctor._id === docId);
@@ -28,36 +33,106 @@ function Appointment() {
   const getAvailableSlots = async () => {
     setDocSlots([]);
     const today = new Date();
-
+  
+    if (!docInfo || !docInfo.slots_booked) {
+      console.log("Doctor info not available yet or missing slots_booked");
+      return;
+    }
+  
+    console.log("Getting available slots with slots_booked:", docInfo.slots_booked);
+  
     for (let i = 0; i < 7; i++) {
       let currentDate = new Date(today);
       currentDate.setDate(today.getDate() + i);
       let endTime = new Date(currentDate);
       endTime.setHours(21, 0, 0, 0);
-
+  
       if (today.getDate() === currentDate.getDate()) {
         currentDate.setHours(currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10);
         currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
       } else {
         currentDate.setHours(10, 0, 0, 0);
       }
-
+  
       let timeSlots = [];
       while (currentDate < endTime) {
-        let formattedTime = currentDate.toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        let formattedTime = currentDate.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
         });
-        timeSlots.push({
-          datetime: new Date(currentDate),
-          time: formattedTime,
-        });
+  
+        let day = currentDate.getDate();
+        let month = currentDate.getMonth() + 1;
+        let year = currentDate.getFullYear();
+      
+        const slotDate = `${day}_${month}_${year}`;
+        const slotTime = formattedTime;
+  
+        // Check if slot is already booked
+        const isSlotAvailable = !(
+          docInfo.slots_booked[slotDate] && 
+          Array.isArray(docInfo.slots_booked[slotDate]) &&
+          docInfo.slots_booked[slotDate].includes(slotTime)
+        );
+  
+        if (isSlotAvailable) {
+          timeSlots.push({
+            datetime: new Date(currentDate),
+            time: formattedTime,
+            slotDate
+          });
+        }
+        
         currentDate.setMinutes(currentDate.getMinutes() + 30);
       }
-      setDocSlots((prev) => [...prev, timeSlots]);
+      
+      setDocSlots(prev => [...prev, timeSlots]);
     }
   };
 
+  const bookAppointment = async () => {
+
+      if (!token) {
+        toast.error("Please login to book appointment")
+        return navigate("/login")
+      }
+      try {
+      const date = docSlots[slotIndex][0].datetime
+
+      let day = date.getDate()
+      let month = date.getMonth() + 1
+      let year = date.getFullYear()
+
+      const slotDate = `${day}_${month}_${year}`
+   
+      if (!userData || !userData._id) {
+        toast.error("User data not found. Please log in again.");
+        return;
+      }
+      const { data } = await axios.post(`${backendUrl}/api/user/book-appointment`, {
+        userId: userData._id,
+        docId,
+        slotDate,
+        slotTime
+      }, {
+        headers: {
+          token
+        }
+      })
+      console.log(data)
+      if (data.success) {
+        toast.success(data.message)
+        getDoctorsData()
+        navigate("/my-appointments")
+      }
+      else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      console.log(error)
+      toast.error(error.response.data.message)
+    }
+  }
   useEffect(() => {
     fetchDocInfo();
   }, [topDoctors, docId]);
@@ -75,7 +150,7 @@ function Appointment() {
         <div className="flex flex-col md:flex-row gap-6 p-6">
           {/* Left Column - Image and Quick Stats */}
           <div className="md:w-1/3">
-            <div 
+            <div
               className="relative rounded-xl overflow-hidden group"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
@@ -88,7 +163,7 @@ function Appointment() {
                 />
               </div>
               {/* Overlay with rating */}
-              <div 
+              <div
                 className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent  
                 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
               >
@@ -143,7 +218,7 @@ function Appointment() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-gray-900">{docInfo.name}</h1>
-                <div 
+                <div
                   className="relative"
                   onMouseEnter={() => setShowTooltip(true)}
                   onMouseLeave={() => setShowTooltip(false)}
@@ -203,8 +278,8 @@ function Appointment() {
                 onClick={() => setSlotIndex(index)}
                 className={`
                   cursor-pointer rounded-xl border-2 transition-all duration-300
-                  ${slotIndex === index 
-                    ? 'border-pink-400 bg-pink-50 shadow-md scale-105' 
+                  ${slotIndex === index
+                    ? 'border-pink-400 bg-pink-50 shadow-md scale-105'
                     : 'border-transparent bg-white hover:border-pink-200'
                   }
                 `}
@@ -249,17 +324,18 @@ function Appointment() {
               className={`
                 group flex items-center gap-2 px-6 py-3 rounded-xl font-medium
                 transition-all duration-300 
-                ${slotTime 
+                ${slotTime
                   ? 'bg-pink-400 hover:bg-pink-500 text-white transform hover:-translate-y-1'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }
               `}
               disabled={!slotTime}
+              onClick={bookAppointment}
             >
               <span>Book Appointment</span>
-              <ChevronRight 
+              <ChevronRight
                 className={`w-5 h-5 transition-transform duration-300 
-                ${slotTime ? 'group-hover:translate-x-1' : ''}`} 
+                ${slotTime ? 'group-hover:translate-x-1' : ''}`}
               />
               {slotTime && (
                 <Heart className="w-5 h-5 text-white animate-pulse" />
@@ -268,6 +344,9 @@ function Appointment() {
           </div>
         </div>
       </div>
+      {/* Related Doctors */}
+      <RelatedDoctors docId={docId} speciality={docInfo.speciality} />
+
     </div>
   );
 }

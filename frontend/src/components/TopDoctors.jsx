@@ -63,7 +63,7 @@ const TopDoctors = () => {
                            transition: { type: "spring", stiffness: 300 }
                        }}
                        className='group bg-white border border-pink-100 rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500'
-                       onClick={() => navigate(`/appointment/${doctor._id}`)}
+                       onClick={() => {navigate(`/appointment/${doctor._id}`);scrollTo(0,0)}}
                    >
                        <div className="relative overflow-hidden">
                            <motion.div
@@ -76,9 +76,9 @@ const TopDoctors = () => {
                                whileHover={{ scale: 1.1 }}
                            />
                            <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full">
-                               <div className='flex items-center gap-2 text-sm text-green-500'>
-                                   <span className='w-2 h-2 bg-green-500 rounded-full animate-pulse'></span>
-                                   <span>Available</span>
+                               <div className={`flex items-center gap-2 text-sm ${doctor.available ? ' text-green-500' : ' text-red-500'}`}>
+                                   <span className={`w-2 h-2 ${doctor.available ? ' bg-green-500' : 'bg-red-500'} rounded-full animate-pulse `}></span>
+                                   <span>{doctor.available ? 'Available' : 'Not Available'}</span>
                                </div>
                            </div>
                        </div>
