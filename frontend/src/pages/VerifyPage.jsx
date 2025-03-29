@@ -26,7 +26,7 @@ const VerifyPage = () => {
   }, []);
 
   useEffect(() => {
-    const timer = cooldown > 0 && setInterval(() => setCooldown(prev => prev - 1), 100);
+    const timer = cooldown > 0 && setInterval(() => setCooldown(prev => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
 
