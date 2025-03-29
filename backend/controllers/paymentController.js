@@ -38,8 +38,8 @@ export const createStripeSession = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.CLIENT_URL}/payment-success?appointmentId=${appointmentId}`,
-      cancel_url: `${process.env.CLIENT_URL}/my-appointments`,
+      success_url: `${https://docdash-frontend.onrender.com}/payment-success?appointmentId=${appointmentId}`,
+      cancel_url: `${https://docdash-frontend.onrender.com}/my-appointments`,
     });
 
     appointment.payment = true;
