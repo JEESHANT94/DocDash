@@ -1,0 +1,6 @@
+# Ignore node_modules in any subfolder
+**/node_modules/
+
+# (Optionally) ignore build or dist folders if they exist
+# **/build/
+# **/dist/
