@@ -4,3 +4,5 @@
 # (Optionally) ignore build or dist folders if they exist
 # **/build/
 # **/dist/
+# Ignore all .env files in any subdirectory
+**/.env
